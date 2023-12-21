@@ -589,9 +589,20 @@ const transporter = nodemailer.createTransport({
 
 async function checkBirthday() {
   try {
+    // Get the current date and time in IST
+    const nowIST1 = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    // Parse the IST date string back into a Date object
+    const nowISTDate1 = new Date(nowIST1);
+    console.log("IST NOW is",nowISTDate1)
+
+
     const today = new Date();
-    const currentMonth = today.getMonth() + 1; // Months are zero-based, so add 1 to get the current month
-    const currentDay = today.getDate();
+    const currentMonth = nowISTDate1.getMonth() + 1; // Months are zero-based, so add 1 to get the current month
+    const currentDay = nowISTDate1.getDate();
+    console.log("NOT IST Today is",today);
+    console.log("current IST Month is",currentMonth);
+    console.log("current NOT IST Day is",today.getDate());
+    console.log("current Day is",currentDay);
 
     const usersWithBirthdaysToday = await User.find({
       $expr: {
@@ -602,15 +613,15 @@ async function checkBirthday() {
       },
     }).select('dob email username');
 
+    console.log(usersWithBirthdaysToday)
+
 
     if (usersWithBirthdaysToday.length > 0) {
-
       for (const user of usersWithBirthdaysToday) {
         await sendBirthdayEmail(user);
         await sendBirthdayNotificationToMe(user);
       }
     } else {
-
       await sendNoBirthdayNotification();
     }
 
