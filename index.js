@@ -76,8 +76,11 @@ mongoose.connect(connectionString, {
 })
   .then(() => {
     console.log("Connected to database")
+    console.log("Front end string is",frontEndConnectionString)
 
     app.listen(PORT, () => {
       console.log(`App is listening on port ${PORT}`);
     });
   })
+
+
