@@ -521,9 +521,11 @@ router.put('/lastLoginUpdate', async (req, res) => {
   
   const lastLogin = formatter.format(new Date());
 
-
   const user = await User.findOne({
-    username: req.body.username,
+    $or: [
+      { username: req.body.username },
+      { email: req.body.username }
+    ]
   });
   //If response is returns nothing, then the code for bcrypt compare code will give error as it cannot handle if user.password is NULL
   //NOTE: Below if else code is only for Testing with POSTMAN. We don't need if else block here as in Angular, the check is already done
@@ -593,16 +595,11 @@ async function checkBirthday() {
     const nowIST1 = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
     // Parse the IST date string back into a Date object
     const nowISTDate1 = new Date(nowIST1);
-    console.log("IST NOW is",nowISTDate1)
 
 
     const today = new Date();
     const currentMonth = nowISTDate1.getMonth() + 1; // Months are zero-based, so add 1 to get the current month
     const currentDay = nowISTDate1.getDate();
-    console.log("NOT IST Today is",today);
-    console.log("current IST Month is",currentMonth);
-    console.log("current NOT IST Day is",today.getDate());
-    console.log("current Day is",currentDay);
 
     const usersWithBirthdaysToday = await User.find({
       $expr: {
@@ -612,8 +609,6 @@ async function checkBirthday() {
         ],
       },
     }).select('dob email username');
-
-    console.log(usersWithBirthdaysToday)
 
 
     if (usersWithBirthdaysToday.length > 0) {
