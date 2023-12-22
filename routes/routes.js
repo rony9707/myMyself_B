@@ -520,6 +520,7 @@ router.put('/lastLoginUpdate', async (req, res) => {
   });
   
   const lastLogin = formatter.format(new Date());
+  console.log("LastLogin is",lastLogin)
 
   const user = await User.findOne({
     $or: [
