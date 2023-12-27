@@ -641,9 +641,9 @@ async function checkBirthday() {
       0, // 0 seconds
     );
 
-    const timeUntilNextMidnightIST = midnightIST.getTime() - nowISTDate.getTime();
+    const timeUntilNextMidnightIST = midnightIST.getTime() - nowISTDate.getTime() + 300000;
 
-    //console.log(timeUntilNextMidnightIST);
+    console.log(timeUntilNextMidnightIST);
 
     // Set a timeout to run the function again at the next 12 AM
     setTimeout(checkBirthday, timeUntilNextMidnightIST);
