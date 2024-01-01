@@ -8,11 +8,15 @@ const jwt = require('jsonwebtoken')
 
 const User = require('../models/user')
 
+const UserScore = require('../models/scoreBoard')
+
 require('dotenv').config()
 
 const nodemailer = require('nodemailer')
 
 const fs = require('fs');
+
+
 
 
 
@@ -242,8 +246,8 @@ router.post("/login", async (req, res) => {
     res.cookie("jwt", token, {
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
-      sameSite: "none", // Adjust as needed
-      secure: true, // Required for 'None'
+      sameSite: "none", // Adjust as needed  --need to comment when running server is 192.168.0.103 or else cookie won't be received
+      secure: true // Required for 'None'--need to comment when running server is 192.168.0.103 or else cookie won't be received
     })
 
 
@@ -518,9 +522,8 @@ router.put('/lastLoginUpdate', async (req, res) => {
     hour12: true, // Set this option to true for 12-hour format
     timeZone: 'Asia/Kolkata', // Set your desired time zone
   });
-  
+
   const lastLogin = formatter.format(new Date());
-  console.log("LastLogin is",lastLogin)
 
   const user = await User.findOne({
     $or: [
@@ -618,7 +621,7 @@ async function checkBirthday() {
         await sendBirthdayNotificationToMe(user);
       }
     } else {
-      await sendNoBirthdayNotification();
+        await sendNoBirthdayNotification();  
     }
 
     // Calculate the time until the next 12 AM
@@ -642,8 +645,6 @@ async function checkBirthday() {
     );
 
     const timeUntilNextMidnightIST = midnightIST.getTime() - nowISTDate.getTime() + 300000;
-
-    console.log(timeUntilNextMidnightIST);
 
     // Set a timeout to run the function again at the next 12 AM
     setTimeout(checkBirthday, timeUntilNextMidnightIST);
@@ -746,5 +747,123 @@ checkBirthday();
 
 
 
+
+//Insert Score Data to DB--------------------------------
+router.post('/scoreboard', async (req, res) => {
+  try {
+    //Date Variables
+    const options = {
+      timeZone: 'Asia/Kolkata',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    };
+    
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    const formattedDate1 = formatter.format(new Date());
+
+    let firstName = req.body.firstName
+    let userName = req.body.userName
+    let email = req.body.email
+    let targetHit = req.body.targethit
+    let timer = req.body.timer
+    let shotsTaken = req.body.shotstaken
+    let accuracy = req.body.accuracy
+    let scoreSubmitDate = formattedDate1
+
+
+    //Username Already Exist Code
+    const username_already_present = await UserScore.findOne({
+      username: userName
+    })
+
+    //Email Already Exist Code
+    const email_already_present = await UserScore.findOne({
+      email: email
+    })
+
+
+    //File if there is 
+    const currentScoreCard = await UserScore.findOne({
+      $or: [
+        { username: userName },
+        { email: email }
+      ]
+    });
+
+
+    const scoreBoard = new UserScore({
+      firstName: firstName,
+      username: userName,
+      email: email,
+      targetsHit: targetHit,
+      Timer: timer,
+      shotsTaken: shotsTaken,
+      Accuracy: accuracy,
+      dteSubmit: scoreSubmitDate
+    })
+
+    if (username_already_present && email_already_present) {
+
+      const filter = { username: currentScoreCard.username };
+
+      let data = await UserScore.updateOne(
+        //{}condition
+        filter,
+        {
+          //set updated data
+          $set: {
+            targetsHit: targetHit,
+            Timer: timer,
+            shotsTaken: shotsTaken,
+            Accuracy: accuracy,
+            dteSubmit: scoreSubmitDate
+          }
+        }
+      )
+
+      //Sending Response
+      res.json({
+        message: `Your score is submitted`
+      })
+    } else {
+      //Saves the data in the DB
+      const result = await scoreBoard.save()
+      //Sending Response
+      res.json({
+        message: `Score is submitted`
+      })
+    }
+
+
+
+
+  }
+  catch (error) {
+    res.status(500).json({ message: 'An error occurred during score submisstion.' });
+  }
+})
+
+
+
+//LeaderBoard Route--------------------------------
+router.get('/leaderBoard', async (req, res) => {
+  try {
+    const top20Results = await UserScore.find()
+      .sort({ targetsHit: -1 })
+      .limit(9000)
+      .select('-_id -__v -username -email'); // Exclude fields from the result
+    // console.log("top 20 results are", top20Results);
+    res.send(top20Results);
+  } catch (err) {
+    return res.status(401).send({
+      message: err.message || 'Error retrieving leaderboard',
+    });
+  }
+});
 
 module.exports = router
